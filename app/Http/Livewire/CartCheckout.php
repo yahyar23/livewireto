@@ -20,49 +20,51 @@ class CartCheckout extends Component
         $this->cart = session()->get('cart', []);
     }
 
-    // تحديث الكمية
-    public function updateQuantity($productId, $quantity)
+    /**
+     * تحديث كمية منتج معين في السلة باستخدام cartKey (منتج + variant)
+     */
+    public function updateQuantity($cartKey, $quantity)
     {
         $quantity = max(1, (int)$quantity);
 
-        if (isset($this->cart[$productId])) {
-
-            $this->cart[$productId]['quantity'] = $quantity;
-
+        if (isset($this->cart[$cartKey])) {
+            $this->cart[$cartKey]['quantity'] = $quantity;
             session()->put('cart', $this->cart);
         }
     }
 
-    // حذف منتج
-    public function remove($productId)
+    /**
+     * حذف منتج من السلة باستخدام cartKey
+     */
+    public function remove($cartKey)
     {
-        if (isset($this->cart[$productId])) {
-
-            unset($this->cart[$productId]);
-
+        if (isset($this->cart[$cartKey])) {
+            unset($this->cart[$cartKey]);
             session()->put('cart', $this->cart);
-
-            $this->cart = session()->get('cart');
         }
+
+        $this->cart = session()->get('cart', []);
     }
 
-    // حساب الإجمالي
+    /**
+     * حساب الإجمالي مع Variants
+     */
     public function calculateTotal()
     {
         $total = 0;
 
         foreach ($this->cart as $item) {
-
             $price = isset($item['price']) ? (float)$item['price'] : 0;
             $quantity = isset($item['quantity']) ? (int)$item['quantity'] : 1;
-
             $total += $price * $quantity;
         }
 
         return $total;
     }
 
-    // إتمام الطلب
+    /**
+     * إتمام الطلب
+     */
     public function placeOrder()
     {
         if (empty($this->cart)) {
@@ -88,15 +90,16 @@ class CartCheckout extends Component
         ]);
 
         // 2️⃣ حفظ المنتجات مع variant_id
-        foreach ($this->cart as $item) {
+        foreach ($this->cart as $cartKey => $item) {
 
             if (!isset($item['id'])) continue;
 
             OrderItem::create([
                 'order_id'     => $order->id,
                 'product_id'   => $item['id'],
-                'variant_id'   => $item['variant_id'] ?? null, // 🔥 الجديد
+                'variant_id'   => $item['variant_id'] ?? null,
                 'product_name' => $item['name'] ?? '',
+                'variant_name' => $item['variant'] ?? '', // اسم المقاس/النوع
                 'price'        => $item['price'] ?? 0,
                 'quantity'     => $item['quantity'] ?? 1,
             ]);

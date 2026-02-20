@@ -25,7 +25,7 @@
     <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm mb-4">
         <div class="container d-flex justify-content-between align-items-center">
 
-            <a href="{{ route('home') }}" class="navbar-brand fw-bold">
+            <a href="{{ route('frontend.products') }}" class="navbar-brand fw-bold">
                 🏠 الرئيسية
             </a>
 
@@ -49,6 +49,7 @@
                         </span>
                     @endif
                 </button>
+              
 
             </div>
         </div>
@@ -158,6 +159,10 @@
                                         
                                     <i class="bi bi-cart-plus"></i>
                                 </button>
+                                  <a href="{{ route('product.details', $product->slug) }}"
+   class="btn btn-sm btn-outline-secondary">
+   عرض التفاصيل
+</a>
                             </div>
 
                         </div>

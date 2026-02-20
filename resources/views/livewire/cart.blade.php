@@ -27,11 +27,10 @@
         </div>
     @endif
 
-
     @if(count($cart) > 0)
 
         <ul class="list-group mb-3">
-            @foreach($cart as $id => $item)
+            @foreach($cart as $cartKey => $item)
                 <li class="list-group-item d-flex justify-content-between align-items-center">
 
                     <div class="d-flex align-items-center gap-2">
@@ -43,18 +42,16 @@
                         @endif
 
                         <div>
-                            <div>{{ $item['name'] }}</div>
+                            <div>{{ $item['name'] }} @if($item['variant']) ({{ $item['variant'] }}) @endif</div>
                             <small>
-                                {{ $item['price'] }} $
-                                ×
-                                {{ $item['quantity'] }}
+                                {{ $item['price'] }} $ × {{ $item['quantity'] }}
                             </small>
                         </div>
                     </div>
 
                     <!-- زر حذف -->
                     <button class="btn btn-sm btn-danger"
-                            wire:click="removeFromCart({{ $id }})">
+                            wire:click="removeFromCart('{{ $cartKey }}')">
                         &times;
                     </button>
 

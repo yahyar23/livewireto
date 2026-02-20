@@ -13,38 +13,48 @@ class Products extends Component
 
     protected $paginationTheme = 'bootstrap';
 
+    protected $queryString = [
+        'selectedCategory' => ['except' => ''],
+        'search' => ['except' => ''],
+    ];
+
     public $search = '';
     public $categories;
     public $selectedCategory = null;
     public $cartCount = 0;
-   public $alertMessage = null;
+    public $alertMessage = null;
 
     protected $listeners = ['cartUpdated' => 'handleCartUpdated'];
 
     public function mount()
     {
+        // تحميل الأقسام
         $this->categories = Category::with('children.children')
             ->whereNull('parent_id')
             ->get();
+
+        // استقبال category من الرابط
+        if (request()->has('category')) {
+            $this->selectedCategory = request()->query('category');
+        }
 
         $this->updateCartCount();
     }
 
     public function handleCartUpdated($type = null)
-{
-    $this->updateCartCount();
+    {
+        $this->updateCartCount();
 
-    if ($type === 'added') {
-        $this->alertMessage = 'added';
-    } elseif ($type === 'removed') {
-        $this->alertMessage = 'removed';
-    } else {
-        $this->alertMessage = null;
+        if ($type === 'added') {
+            $this->alertMessage = 'added';
+        } elseif ($type === 'removed') {
+            $this->alertMessage = 'removed';
+        } else {
+            $this->alertMessage = null;
+        }
+
+        $this->dispatchBrowserEvent('hide-success-message');
     }
-
-    $this->dispatchBrowserEvent('hide-success-message');
-}
-
 
     public function updateCartCount()
     {
@@ -59,12 +69,10 @@ class Products extends Component
         $this->resetPage();
     }
 
-    public function showAddedAlert($productName)
-{
-    $this->alertMessage = $productName . ' تمت إضافته للسلة';
-
-    $this->dispatchBrowserEvent('hide-alert');
-}
+    public function updatingSearch()
+    {
+        $this->resetPage();
+    }
 
     public function render()
     {

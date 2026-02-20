@@ -56,6 +56,9 @@
                         <tr class="table-light">
                             <td colspan="2" class="text-end ps-5">المنتج: {{ $item->product_name }}</td>
                             <td>{{ $item->quantity }} × {{ $item->price }} $</td>
+                            <td><img src="{{ asset('storage/'.$item->product->images->first()->image_path) }}"
+     width="50"
+     class="rounded"></td>
                             <td colspan="5"></td>
                         </tr>
                     @endforeach

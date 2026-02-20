@@ -9,9 +9,10 @@ class Cart extends Component
 {
     public $cart = [];
     public $showCart = false;
-    public $message = ''; // استخدمنا message بدل addedMessage لتعميمها
-public $messageType = 'success'; // ← هذا هو المهم
+    public $message = ''; 
+    public $messageType = 'success';
 
+    // استقبال الحدث مع VariantId
     protected $listeners = ['addToCart'];
 
     public function mount()
@@ -19,60 +20,73 @@ public $messageType = 'success'; // ← هذا هو المهم
         $this->cart = session()->get('cart', []);
     }
 
-    // إضافة المنتج
-    public function addToCart($productId)
+    /**
+     * إضافة منتج إلى السلة مع دعم Variants
+     * $productId → المنتج
+     * $variantId → المقاس / النوع
+     */
+    public function addToCart($productId, $variantId = null)
     {
         $product = Product::with('variants', 'images')->findOrFail($productId);
         $cart = session()->get('cart', []);
-$product = Product::with('variants', 'images')->findOrFail($productId);
 
-$variant = $product->variants->first();  // 🔥 هذا هو الحل
-
-if (!$variant) {
-    return;
-}
-
-$variantId = $variant->id;
-        if (isset($cart[$productId])) {
-            $cart[$productId]['quantity'] += 1;
+        // اختيار Variant
+        if ($variantId) {
+            $variant = $product->variants->where('id', $variantId)->first();
         } else {
-            $cart[$productId] = [
-                'id'       => $product->id,
-                 'variant_id'  => $variantId,   
-                'name'     => $product->name,
-                'price'    => $variant->price,
-                'image'    => $product->images->first()->image_path ?? null,
-                'quantity' => 1,
+            $variant = $product->variants->first();
+        }
+
+        if (!$variant) {
+            $this->dispatchBrowserEvent('notify', ['message' => 'المنتج لا يحتوي على مقاس أو النوع المحدد']);
+            return;
+        }
+
+        // مفتاح السلة يكون المنتج + variantId لضمان التفريق بين Variants
+        $cartKey = $product->id . '-' . $variant->id;
+
+        if (isset($cart[$cartKey])) {
+            $cart[$cartKey]['quantity'] += 1;
+        } else {
+            $cart[$cartKey] = [
+                'id'         => $product->id,
+                'variant_id' => $variant->id,
+                'name'       => $product->name,
+                'variant'    => $variant->name ?? '', // اسم المقاس/النوع
+                'price'      => $variant->price,
+                'image'      => $product->images->first()->image_path ?? null,
+                'quantity'   => 1,
             ];
         }
 
         session()->put('cart', $cart);
         $this->cart = $cart;
-
-        $this->message = $product->name . ' تمت إضافته للسلة';
         $this->showCart = true;
-$this->emit('productAdded', $product->name);
-$this->emit('cartUpdated', 'added');
 
+        $this->message = $product->name . ' (' . ($variant->name ?? '') . ') تمت إضافته للسلة';
+        $this->emit('productAdded', $product->name);
+        $this->emit('cartUpdated', 'added');
     }
 
-    // حذف المنتج
-    public function removeFromCart($productId)
+    /**
+     * حذف منتج من السلة حسب Variant
+     */
+    public function removeFromCart($cartKey)
     {
         $cart = session()->get('cart', []);
 
-        if (isset($cart[$productId])) {
-            $deletedName = $cart[$productId]['name'] ?? 'المنتج';
-            unset($cart[$productId]);
+        if (isset($cart[$cartKey])) {
+            $deletedName = $cart[$cartKey]['name'] ?? 'المنتج';
+            $deletedVariant = $cart[$cartKey]['variant'] ?? '';
+            unset($cart[$cartKey]);
+
             session()->put('cart', $cart);
             $this->cart = $cart;
 
-            $this->message = $deletedName . ' تم حذفه من السلة';
+            $this->message = $deletedName . ' (' . $deletedVariant . ') تم حذفه من السلة';
+            $this->emit('productRemoved', $deletedName);
+            $this->emit('cartUpdated', 'removed');
         }
-
-       $this->emit('productRemoved', $deletedName);
-$this->emit('cartUpdated', 'removed');
-
     }
 
     public function closeCart()
