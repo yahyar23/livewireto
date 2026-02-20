@@ -98,7 +98,7 @@ class Create extends Component
 
     session()->flash('success', 'تم إنشاء المنتج بنجاح');
 
-    return redirect()->route('products.index');
+    return redirect()->route('admin.products.create');
 }
 
 

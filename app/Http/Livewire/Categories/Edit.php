@@ -4,6 +4,7 @@ namespace App\Http\Livewire\Categories;
 
 use Livewire\Component;
 use App\Models\Category;
+use Illuminate\Support\Str; // استيراد كلاس Str
 
 class Edit extends Component
 {
@@ -15,7 +16,8 @@ class Edit extends Component
     protected function rules()
     {
         return [
-            'name' => 'required|min:3',
+            // أضفنا unique مع استثناء القسم الحالي لضمان عدم تكرار الاسم
+            'name' => 'required|min:3|unique:categories,name,' . $this->category->id,
             'parent_id' => 'nullable|exists:categories,id'
         ];
     }
@@ -44,8 +46,18 @@ class Edit extends Component
             return;
         }
 
+        // إنشاء الـ Slug الجديد بناءً على الاسم المعدل
+        $slug = Str::slug($this->name);
+
+        // التحقق من عدم تكرار الـ Slug مع أقسام أخرى
+        $count = Category::where('slug', $slug)->where('id', '!=', $this->category->id)->count();
+        if ($count > 0) {
+            $slug = "{$slug}-" . ($this->category->id);
+        }
+
         $this->category->update([
             'name' => $this->name,
+            'slug' => $slug, // تحديث الـ Slug هنا
             'description' => $this->description,
             'parent_id' => $this->parent_id
         ]);

@@ -70,6 +70,8 @@
 
         <!-- بيانات الزائر إذا لم يكن مسجل -->
         @if(!auth()->check())
+        <h2>يرجى ملئ المعلومات الخاصة بك </h2>
+        <h2 style="color:#fff;" class="bg-danger">الدفع عند الاستلام </h2>
             <div class="mb-3">
                 <input type="text"
                        wire:model.defer="name"

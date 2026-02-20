@@ -23,6 +23,8 @@ class Products extends Component
     public $selectedCategory = null;
     public $cartCount = 0;
     public $alertMessage = null;
+    public $mensProducts = [];
+    public $mensCategoryName = null; // أضفت هذا المتغير لضمان عدم حدوث خطأ في التعريف
 
     protected $listeners = ['cartUpdated' => 'handleCartUpdated'];
 
@@ -33,12 +35,29 @@ class Products extends Component
             ->whereNull('parent_id')
             ->get();
 
-        // استقبال category من الرابط
+        // استقبال slug القسم من الرابط
         if (request()->has('category')) {
             $this->selectedCategory = request()->query('category');
         }
 
         $this->updateCartCount();
+
+        // 🔥 جلب 6 منتجات من القسم الذي يحمل slug معين (مثلاً القسم الثاني)
+        // ملاحظة: قمت بالبحث بالـ ID هنا فقط لضمان جلب القسم المقصود برمجياً وتحويله لـ slug لاحقاً
+        $mensCategory = Category::find(2);
+
+        if ($mensCategory) {
+            $this->mensCategoryName = $mensCategory->name;
+
+            // جلب الـ IDs للقسم وأبنائه لضمان ظهور المنتجات
+            $categoryIds = $this->getAllCategoryIds($mensCategory);
+
+            $this->mensProducts = Product::with(['images','variants','category'])
+                ->whereIn('category_id', $categoryIds)
+                ->latest()
+                ->take(6)
+                ->get();
+        }
     }
 
     public function handleCartUpdated($type = null)
@@ -63,15 +82,25 @@ class Products extends Component
             : 0;
     }
 
-    public function filterByCategory($categoryId = null)
+    public function filterByCategory($categorySlug = null)
     {
-        $this->selectedCategory = $categoryId;
+        $this->selectedCategory = $categorySlug;
         $this->resetPage();
     }
 
     public function updatingSearch()
     {
         $this->resetPage();
+    }
+
+    // دالة مساعدة لجلب كافة IDs الأقسام (الأب + الأبناء) لضمان ظهور المنتجات
+    private function getAllCategoryIds($category)
+    {
+        $ids = [$category->id];
+        foreach ($category->children as $child) {
+            $ids = array_merge($ids, $this->getAllCategoryIds($child));
+        }
+        return $ids;
     }
 
     public function render()
@@ -83,7 +112,12 @@ class Products extends Component
         }
 
         if ($this->selectedCategory) {
-            $query->where('category_id', $this->selectedCategory);
+            // البحث عن القسم بواسطة الـ slug وجلب منتجاته مع منتجات أبنائه
+            $category = Category::where('slug', $this->selectedCategory)->first();
+            if ($category) {
+                $categoryIds = $this->getAllCategoryIds($category);
+                $query->whereIn('category_id', $categoryIds);
+            }
         }
 
         $products = $query->paginate(9);

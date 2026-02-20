@@ -9,11 +9,13 @@ use App\Models\Category;
 class ProductDetails extends Component
 {
     public $product;
+    
     public $selectedVariantId = null;
-public $cartCount = 0;
-public $categories = [];
+    public $cartCount = 0;
+    public $categories = [];
 
     public $selectedCategory = null;
+
     // نستخدم slug بدل id
     public function mount($slug)
     {
@@ -21,10 +23,11 @@ public $categories = [];
         $this->product = Product::with('images', 'variants','category')
             ->where('slug', $slug)
             ->firstOrFail();
- $this->cartCount = count(session()->get('cart', []));
- $this->categories = Category::with('children.children')
-        ->whereNull('parent_id')
-        ->get();
+
+        $this->cartCount = count(session()->get('cart', []));
+        $this->categories = Category::with('children.children')
+            ->whereNull('parent_id')
+            ->get();
  
         // تحديد أول Variant تلقائيًا إذا موجود
         if ($this->product->variants->count() > 0) {
@@ -51,12 +54,15 @@ public $categories = [];
             'message' => 'تم إضافة المنتج إلى السلة بنجاح'
         ]);
     }
-public function goToCategory($categoryId)
-{
-    return redirect()->route('frontend.products', [
-        'category' => $categoryId
-    ]);
-}
+
+    // تعديل الدالة لتستقبل الـ slug وتوجه به
+    public function goToCategory($categorySlug)
+    {
+        return redirect()->route('frontend.products', [
+            'category' => $categorySlug
+        ]);
+    }
+
     public function render()
     {
         return view('livewire.frontend.product-details')
